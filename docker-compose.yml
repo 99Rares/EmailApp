@@ -1,0 +1,15 @@
+services:
+  flask_app:
+    build:
+      context: .
+    ports:
+      - "5001:5000"  # Change 5000 on the host to 5001
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - ACCOUNT_ID=${ACCOUNT_ID}
+      - CLOUDFLARE_ZONE_ID=${CLOUDFLARE_ZONE_ID}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - PLACEHOLDER_EMAIL_DOMAIN=${PLACEHOLDER_EMAIL_DOMAIN}
+      - DESTINATION_EMAIL=${DESTINATION_EMAIL}
+      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
+    restart: unless-stopped
