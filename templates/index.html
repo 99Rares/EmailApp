@@ -167,7 +167,7 @@
         function formatDateTime(dateTimeString) {
             const date = new Date(dateTimeString);
             const formattedDate = date.toLocaleDateString().replaceAll("/", ".");
-            const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const formattedTime = date.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
             return `${formattedDate} ${formattedTime}`;
         }
 
