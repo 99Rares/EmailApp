@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, flash, redirect, url_for, session
+from zoneinfo import ZoneInfo
 import requests
 import datetime
 import os
@@ -111,11 +112,12 @@ def add_email_routing_rule(generated_email, destination_email, action_type):
     if action_type == "forward" and destination_email:
         action["value"] = [destination_email]
 
+    romania_time = datetime.datetime.now(ZoneInfo("Europe/Bucharest"))
     data = {
         "matchers": [{"type": "literal", "field": "to", "value": generated_email}],
         "actions": [action],
         "enabled": True,
-        "name": f"Rule created at {datetime.datetime.now()}",
+        "name": f"Rule created at {romania_time}",
     }
 
     response = requests.post(ROUTING_URL, headers=headers, json=data)
