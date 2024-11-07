@@ -214,6 +214,7 @@ def index():
 
 
 @app.route("/add-rule", methods=["GET", "POST"])
+@login_required
 def add_rule():
     if request.method == "POST":
         generated_email = request.form.get("generated_email")
@@ -234,6 +235,7 @@ def add_rule():
 
 
 @app.route("/delete-rule/<rule_id>", methods=["POST"])
+@login_required
 def delete_rule(rule_id):
     success = delete_email_routing_rule(rule_id)
     return redirect(url_for("index"))
