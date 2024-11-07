@@ -5,7 +5,7 @@ import os
 import bcrypt
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY')
+app.secret_key = os.environ.get("SECRET_KEY")
 
 # Cloudflare API configuration
 ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
@@ -14,7 +14,6 @@ CLOUDFLARE_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN")
 PLACEHOLDER_EMAIL_DOMAIN = os.environ.get("PLACEHOLDER_EMAIL_DOMAIN")
 DESTINATION_EMAIL = os.environ.get("DESTINATION_EMAIL")
 MY_USER = os.environ.get("MY_USER")
-
 
 
 ROUTING_URL = f"https://api.cloudflare.com/client/v4/zones/{CLOUDFLARE_ZONE_ID}/email/routing/rules"
