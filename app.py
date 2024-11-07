@@ -162,6 +162,12 @@ def parse_json(rules):
             "destination_email": "",
         }
 
+        # Strip the prefix "Rule created at " if it exists
+        if rule_data["creation_time"].startswith("Rule created at "):
+            rule_data["creation_time"] = rule_data["creation_time"][
+                len("Rule created at ") :
+            ]
+
         # Get generated email from matchers
         for matcher in rule.get("matchers", []):
             if matcher.get("field") == "to":
@@ -179,7 +185,6 @@ def parse_json(rules):
                 ]  # Default if no destination email
 
         parsed_rules.append(rule_data)
-        print(parsed_rules)
 
     return parsed_rules
 
@@ -212,11 +217,13 @@ def index():
 def add_rule():
     if request.method == "POST":
         generated_email = request.form.get("generated_email")
+        destination_email = request.form.get("destination_email")
         if not generated_email:
             generated_email = generate_random_email()
         else:
             generated_email += f"@{PLACEHOLDER_EMAIL_DOMAIN}"
-        destination_email = DESTINATION_EMAIL
+        if not destination_email:
+            destination_email = DESTINATION_EMAIL
         action_type = request.form.get("action_type")
 
         if generated_email and destination_email:
