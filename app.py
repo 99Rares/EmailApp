@@ -1,31 +1,12 @@
 from flask import Flask, render_template, request, flash, redirect, url_for, session
-from zoneinfo import ZoneInfo
-import requests
-import datetime
+from constants import EMAIL_LIST, USER_CREDENTIALS
+from logic import *
 import os
 import bcrypt
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY")
 
-# Cloudflare API configuration
-ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
-CLOUDFLARE_ZONE_ID = os.environ.get("CLOUDFLARE_ZONE_ID")
-CLOUDFLARE_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN")
-PLACEHOLDER_EMAIL_DOMAIN = os.environ.get("PLACEHOLDER_EMAIL_DOMAIN")
-DESTINATION_EMAIL = os.environ.get("DESTINATION_EMAIL")
-MY_USER = os.environ.get("MY_USER")
-
-
-ROUTING_URL = f"https://api.cloudflare.com/client/v4/zones/{CLOUDFLARE_ZONE_ID}/email/routing/rules"
-
-
-# Read user credentials from environment variables
-USER_CREDENTIALS = {
-    MY_USER: os.environ.get(
-        "ADMIN_PASSWORD_HASH"
-    )  # Set the encrypted password hash as an environment variable
-}
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -58,151 +39,16 @@ def logout():
         return redirect(url_for("login"))
 
 
-# Function to delete an email routing rule by ID
-def delete_email_routing_rule(rule_id):
-    headers = {
-        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
-        "Content-Type": "application/json",
-    }
+@app.route("/api/emails", methods=["GET"])
+def get_emails():
+    # Get the emails list from the environment variable
+    emails_list = EMAIL_LIST
+    # Convert the comma-separated string to a list of dictionaries
+    emails = [
+        {"value": email, "label": email} for email in emails_list.split(",") if email
+    ]
 
-    delete_url = f"{ROUTING_URL}/{rule_id}"
-    response = requests.delete(delete_url, headers=headers)
-
-    if response.status_code == 200:
-        flash("Routing rule deleted successfully!", "success")
-        return True
-    else:
-        flash(
-            f"Failed to delete routing rule: {response.json().get('errors', 'Unknown error')}",
-            "error",
-        )
-        print(f"Error: {response.status_code} - {response.json()}")
-        return False
-
-
-# Function to generate a random email address using the Random Word API
-def generate_random_email():
-    try:
-        response = requests.get(
-            "https://random-word-api.herokuapp.com/word?number=3&length=5"
-        )
-        response.raise_for_status()  # Raise an error for bad status codes
-        words = response.json()
-        if len(words) == 3:
-            return f"{'-'.join(words)}@{PLACEHOLDER_EMAIL_DOMAIN}"
-        else:
-            raise ValueError("Received fewer than 3 words from the API")
-    except (requests.RequestException, ValueError) as e:
-        print(f"Error fetching random words: {e}")
-        return f"fallback-email@{PLACEHOLDER_EMAIL_DOMAIN}"  # Fallback email in case of an error
-
-
-# Function to add a new email routing rule
-def add_email_routing_rule(generated_email, destination_email, action_type):
-    # Generate a random destination email if it's empty and the action type is 'forward'
-
-    headers = {
-        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
-        "Content-Type": "application/json",
-    }
-
-    # Prepare the action based on the selected type
-    action = {"type": action_type}
-
-    if action_type == "forward" and destination_email:
-        action["value"] = [destination_email]
-
-    romania_time = datetime.datetime.now(ZoneInfo("Europe/Bucharest"))
-    data = {
-        "matchers": [{"type": "literal", "field": "to", "value": generated_email}],
-        "actions": [action],
-        "enabled": True,
-        "name": f"Rule created at {romania_time}",
-    }
-
-    response = requests.post(ROUTING_URL, headers=headers, json=data)
-    if response.status_code == 200:
-        flash("Routing rule added successfully!", "success")
-        return True
-    else:
-        flash(
-            f"Failed to add routing rule: {response.json().get('errors', 'Unknown error')}",
-            "error",
-        )
-        print(f"Error: {response.status_code} - {response.json()}")
-        return False
-
-
-def get_email_routing_addresses():
-    """Fetch the list of email routing addresses from Cloudflare."""
-    headers = {
-        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
-        "Content-Type": "application/json",
-    }
-    response = requests.get(ROUTING_URL, headers=headers)
-    if response.status_code == 200:
-        return parse_json(response.json().get("result", []))
-    else:
-        print(f"Error: {response.status_code} - {response.json()}")
-        return None
-
-
-def parse_json(rules):
-    parsed_rules = []
-
-    # Parse each rule and extract only the relevant details
-    for rule in rules:
-        if rule.get("actions")[0].get("type") == "worker":
-            continue
-
-        rule_data = {
-            "creation_time": rule.get(
-                "name", "No creation time available"
-            ),  # Default if 'name' is missing
-            "id": rule.get("id", None),
-            "generated_email": "",
-            "destination_email": "",
-        }
-
-        # Strip the prefix "Rule created at " if it exists
-        if rule_data["creation_time"].startswith("Rule created at "):
-            rule_data["creation_time"] = rule_data["creation_time"][
-                len("Rule created at ") :
-            ]
-
-        # Get generated email from matchers
-        for matcher in rule.get("matchers", []):
-            if matcher.get("field") == "to":
-                rule_data["generated_email"] = matcher.get("value", "Unknown")
-
-        # Get destination email from actions
-        for action in rule.get("actions", []):
-            if action.get("type") == "forward":
-                rule_data["destination_email"] = action.get("value", ["Unknown"])[
-                    0
-                ]  # Default if no destination email
-            else:
-                rule_data["destination_email"] = action.get("value", ["Drop"])[
-                    0
-                ]  # Default if no destination email
-
-        parsed_rules.append(rule_data)
-
-    return parsed_rules
-
-
-def login_required(f):
-    """Decorator to protect routes that require authentication."""
-    from functools import wraps
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "user" not in session:
-            flash("You need to be logged in to access this page.", "warning")
-            return redirect(url_for("login"))
-        return f(*args, **kwargs)
-
-    return decorated_function
+    return jsonify(emails)
 
 
 @app.route("/")
@@ -221,18 +67,12 @@ def add_rule():
     if request.method == "POST":
         generated_email = request.form.get("generated_email")
         destination_email = request.form.get("destination_email")
-        if not generated_email:
-            generated_email = generate_random_email()
-        else:
-            generated_email += f"@{PLACEHOLDER_EMAIL_DOMAIN}"
-        if not destination_email:
-            destination_email = DESTINATION_EMAIL
+        name = request.form.get("app_name")
+        generated_email = generate_random_email(generated_email)
         action_type = request.form.get("action_type")
 
         if generated_email and destination_email:
-            success = add_email_routing_rule(
-                generated_email, destination_email, action_type
-            )
+            success = add_email_routing_rule(generated_email, destination_email, action_type, name)
             return redirect(url_for("index"))
 
 

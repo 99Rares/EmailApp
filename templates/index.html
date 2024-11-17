@@ -9,60 +9,7 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-    <style>
-        .container {
-            background-color: #2a2d35;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 1.5);
-            padding: 20px;
-        }
-        .table {
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .btn-danger {
-            background-color: #ff4c4c;
-            border: none;
-        }
-        .btn-danger:hover {
-            background-color: #e63939;
-        }
-        .form-control, .form-select {
-            background-color: #3b3f48;
-            border: 1px solid #5c6370;
-            color: #fff;
-        }
-        .form-control:focus, .form-select:focus {
-            box-shadow: 0 0 5px #007bff;
-        }
-        h1, h2 {
-            text-align: center;
-        }
-
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            /* Semi-transparent gray */
-            display: none;
-            /* Hidden by default */
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            /* Ensure it appears above other elements */
-        }
-
-        /* Centered loading spinner */
-        #loadingSpinner {
-            width: 10rem;
-            /* Increase the width */
-            height: 10rem;
-            /* Increase the height */
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body class="bg-dark text-light">
@@ -104,6 +51,7 @@
                 <thead class="bg-secondary text-white">
                     <tr>
                         <th scope="col">Creation Time</th>
+                        <th scope="col">Service Name</th>
                         <th scope="col">Generated Email</th>
                         <th scope="col">Destination Email</th>
                         <th scope="col">Actions</th>
@@ -113,6 +61,7 @@
                     {% for rule in email_addresses %}
                     <tr>
                         <td data-label="Creation Time" class="creation-time">{{ rule.creation_time }}</td>
+                        <td data-label="Name">{{ rule.name }}</td>
                         <td data-label="Generated Email">{{ rule.generated_email }}</td>
                         <td data-label="Destination Email">{{ rule.destination_email }}</td>
                         <td data-label="Actions">
@@ -145,6 +94,22 @@
                     placeholder="random">
                 <div class="invalid-feedback">
                     This field is required when 'Drop' is selected.
+                </div>
+            </div>
+            <div class="mb-3">
+                <div class="mb-3">
+                    <label for="app_name" class="form-label">Service Name</label>
+                    <input type="text" id="app_name" name="app_name" class="form-control bg-dark text-light"
+                        placeholder="Enter the service or app name">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="destination_email" class="form-label">Destination Email</label>
+                <select id="destination_email" name="destination_email" class="form-select bg-dark text-light" required>
+                    <option value="" disabled selected>Select an email</option>
+                </select>
+                <div class="invalid-feedback">
+                    Please select an email.
                 </div>
             </div>
             <div class="mb-3">
@@ -204,6 +169,22 @@
                 }
                 ruleForm.classList.add('was-validated');
             });
+
+            fetch('/api/emails')
+                .then(response => response.json())
+                .then(emails => {
+                    const dropdown = document.getElementById('destination_email');
+
+                    emails.forEach(email => {
+                        const option = document.createElement('option');
+                        option.value = email.value;  // Set the value
+                        option.textContent = email.label;  // Set the display text
+                        dropdown.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching emails:', error);
+                });
         });
 
         // Function to show the loading spinner
