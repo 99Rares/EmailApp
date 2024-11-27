@@ -43,7 +43,7 @@ def generate_random_email(text=None):
         missing_words = 3 - len(words)
         if missing_words > 0:
             response = requests.get(
-                f"https://random-word-api.herokuapp.com/word?number={missing_words}&length=5"
+                f"https://random-word-api.vercel.app/api?words={missing_words}&length=5"
             )
             response.raise_for_status()
             words.extend(response.json())
