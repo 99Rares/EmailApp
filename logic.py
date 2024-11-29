@@ -8,8 +8,6 @@ import datetime
 from constants import CLOUDFLARE_API_TOKEN, PLACEHOLDER_EMAIL_DOMAIN, ROUTING_URL
 
 
-
-
 # Function to delete an email routing rule by ID
 def delete_email_routing_rule(rule_id):
     headers = {
@@ -134,7 +132,7 @@ def parse_json(rules):
 
         # Extract the name and split it into 'name' and 'creation_time' if possible
         name = rule.get("name", "No+creation+time+available")
-        name_and_date = name.split('@') if '@' in name else ["---", name]
+        name_and_date = name.split("@") if "@" in name else ["---", name]
         print(name_and_date)
         rule_data = {
             "creation_time": name_and_date[1],
@@ -146,7 +144,9 @@ def parse_json(rules):
 
         # Strip the prefix "Rule created at " if it exists
         if rule_data["creation_time"].startswith("Rule created at "):
-            rule_data["creation_time"] = rule_data["creation_time"][len("Rule created at "):]
+            rule_data["creation_time"] = rule_data["creation_time"][
+                len("Rule created at ") :
+            ]
 
         # Get generated email from matchers
         for matcher in rule.get("matchers", []):
@@ -161,7 +161,7 @@ def parse_json(rules):
                 rule_data["destination_email"] = action.get("value", ["Drop"])[0]
 
         # Append the rule data to the parsed rules list
-        if rule_data["generated_email"] =='':
+        if rule_data["generated_email"] == "":
             continue
         parsed_rules.append(rule_data)
 
