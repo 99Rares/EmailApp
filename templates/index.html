@@ -44,10 +44,22 @@
         {% endif %}
         {% endwith %}
 
+        <!-- Dynamic Filter for Destination Email -->
+        <div class="mb-3">
+            <label for="destinationFilter" class="form-label">Filter by Destination Email:</label>
+            <select id="destinationFilter" class="form-select">
+                <option value="">Show All</option>
+                {% set unique_emails = email_addresses | map(attribute='destination_email') | list | unique %}
+                {% for email in unique_emails %}
+                <option value="{{ email }}">{{ email }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
         <!-- Display Parsed Email Routing Rules in a Table -->
         {% if email_addresses %}
         <div class="table-responsive card text-bg-dark border border-primary shadow-lg">
-            <table class="table table-striped table-hover table-bordered align-middle table-dark">
+            <table class="table table-striped table-hover table-bordered align-middle table-dark" id="emailTable">
                 <thead class="bg-secondary text-white">
                     <tr>
                         <th scope="col">Creation Time</th>
@@ -63,7 +75,7 @@
                         <td data-label="Creation Time" class="creation-time">{{ rule.creation_time }}</td>
                         <td data-label="Name">{{ rule.name }}</td>
                         <td data-label="Generated Email">{{ rule.generated_email }}</td>
-                        <td data-label="Destination Email">{{ rule.destination_email }}</td>
+                        <td data-label="Destination Email" class="destination-email">{{ rule.destination_email }}</td>
                         <td data-label="Actions">
                             <form action="{{ url_for('delete_rule', rule_id=rule.id) }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-danger btn-sm" onclick="showLoading()">
@@ -81,122 +93,153 @@
             No email routing rules found.
         </div>
         {% endif %}
-    </div>
 
-    <!-- Form to Add a New Email Routing Rule -->
-    <div class="container my-5 bg-dark">
-        <h2 class="text-center mb-4">Add Email Routing Rule</h2>
-        <form id="ruleForm" action="{{ url_for('add_rule') }}" method="POST" class="needs-validation" novalidate
-            onsubmit="showLoading()">
-            <div class="mb-3">
-                <label for="generated_email" class="form-label">Generated Text</label>
-                <input type="text" id="generated_email" name="generated_email" class="form-control bg-dark text-light"
-                    placeholder="random">
-                <div class="invalid-feedback">
-                    This field is required when 'Drop' is selected.
-                </div>
-            </div>
-            <div class="mb-3">
-                <div class="mb-3">
-                    <label for="app_name" class="form-label">Service Name</label>
-                    <input type="text" id="app_name" name="app_name" class="form-control bg-dark text-light"
-                        placeholder="Enter the service or app name">
-                </div>
-            </div>
-            <div class="mb-3">
-                <label for="destination_email" class="form-label">Destination Email</label>
-                <select id="destination_email" name="destination_email" class="form-select bg-dark text-light" required>
-                    <option value="" disabled selected>Select an email</option>
-                </select>
-                <div class="invalid-feedback">
-                    Please select an email.
-                </div>
-            </div>
-            <div class="mb-3">
-                <label for="action_type" class="form-label">Action Type</label>
-                <select id="action_type" name="action_type" class="form-select bg-dark text-light" required>
-                    <option value="forward">Forward</option>
-                    <option value="drop">Drop</option>
-                </select>
-                <div class="invalid-feedback">
-                    Please select an action type.
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Add Rule</button>
-        </form>
-    </div>
+        <!-- JavaScript for Dynamic Filtering -->
+        <script>
+            document.getElementById('destinationFilter').addEventListener('change', function () {
+                const filterValue = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#emailTable tbody tr');
 
-    <!-- JavaScript to Format Dates and Show Spinner -->
-    <script>
-        // Function to format the date to only date and time
-        function formatDateTime(dateTimeString) {
-            const date = new Date(dateTimeString);
-            const formattedDate = date.toLocaleDateString().replaceAll("/", ".");
-            const formattedTime = date.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
-            return `${formattedDate} ${formattedTime}`;
-        }
-
-        // Select all elements with the class 'creation-time' and format their text content
-        document.addEventListener("DOMContentLoaded", function () {
-            const actionTypeSelect = document.getElementById('action_type');
-            const generatedEmailInput = document.getElementById('generated_email');
-            const ruleForm = document.getElementById('ruleForm');
-            const spinnerElement = document.getElementById('loadingOverlay');
-
-            actionTypeSelect.addEventListener('change', function () {
-                if (actionTypeSelect.value === 'drop') {
-                    generatedEmailInput.setAttribute('required', 'true');
-                } else {
-                    generatedEmailInput.removeAttribute('required');
-                }
-            });
-
-            const creationTimeElements = document.querySelectorAll(".creation-time");
-            creationTimeElements.forEach(element => {
-                const originalText = element.textContent.trim();
-                if (originalText) {
-                    element.textContent = formatDateTime(originalText);
-                }
-            });
-
-            ruleForm.addEventListener('submit', function (event) {
-                if (!ruleForm.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    spinnerElement.style.display = 'none';
-                } else {
-                    showLoading();
-                }
-                ruleForm.classList.add('was-validated');
-            });
-
-            fetch('/api/emails')
-                .then(response => response.json())
-                .then(emails => {
-                    const dropdown = document.getElementById('destination_email');
-
-                    emails.forEach(email => {
-                        const option = document.createElement('option');
-                        option.value = email.value;  // Set the value
-                        option.textContent = email.label;  // Set the display text
-                        dropdown.appendChild(option);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching emails:', error);
+                rows.forEach(row => {
+                    const destinationEmail = row.querySelector('.destination-email').textContent.toLowerCase();
+                    if (!filterValue || destinationEmail === filterValue) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
                 });
-        });
+            });
+        </script>
 
-        // Function to show the loading spinner
-        function showLoading() {
-            document.getElementById('loadingOverlay').style.display = 'flex';
-        }
-    </script>
 
-    <!-- Link to Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
+
+        <!-- Form to Add a New Email Routing Rule -->
+        <div class="container my-5 bg-dark">
+            <h2 class="text-center mb-4">Add Email Routing Rule</h2>
+            <form id="ruleForm" action="{{ url_for('add_rule') }}" method="POST" class="needs-validation" novalidate
+                onsubmit="showLoading()">
+                <div class="mb-3">
+                    <label for="generated_email" class="form-label">Generated Text</label>
+                    <input type="text" id="generated_email" name="generated_email"
+                        class="form-control bg-dark text-light" placeholder="random">
+                    <div class="invalid-feedback">
+                        This field is required when 'Drop' is selected.
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="mb-3">
+                        <label for="app_name" class="form-label">Service Name</label>
+                        <input type="text" id="app_name" name="app_name" class="form-control bg-dark text-light"
+                            placeholder="Enter the service or app name">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="destination_email" class="form-label">Destination Email</label>
+                    <select id="destination_email" name="destination_email" class="form-select bg-dark text-light"
+                        required>
+                        <option value="" disabled selected>Select an email</option>
+                    </select>
+                    <div class="invalid-feedback">
+                        Please select an email.
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="action_type" class="form-label">Action Type</label>
+                    <select id="action_type" name="action_type" class="form-select bg-dark text-light" required>
+                        <option value="forward">Forward</option>
+                        <option value="drop">Drop</option>
+                    </select>
+                    <div class="invalid-feedback">
+                        Please select an action type.
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Add Rule</button>
+            </form>
+        </div>
+
+        <!-- JavaScript to Format Dates and Show Spinner -->
+        <script>
+            setTimeout(() => {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    alert.classList.remove('show');
+                    alert.classList.add('fade');
+                    setTimeout(() => alert.remove(), 150); // Delay to allow fade-out animation
+                });
+            }, 10000);
+
+            // Function to format the date to only date and time
+            function formatDateTime(dateTimeString) {
+                const date = new Date(dateTimeString);
+                const formattedDate = date.toLocaleDateString().replaceAll("/", ".");
+                const formattedTime = date.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+                return `${formattedDate} ${formattedTime}`;
+            }
+
+            // Select all elements with the class 'creation-time' and format their text content
+            document.addEventListener("DOMContentLoaded", function () {
+                const actionTypeSelect = document.getElementById('action_type');
+                const generatedEmailInput = document.getElementById('generated_email');
+                const ruleForm = document.getElementById('ruleForm');
+                const spinnerElement = document.getElementById('loadingOverlay');
+                const destinationEmail = document.getElementById('destination_email');
+
+                actionTypeSelect.addEventListener('change', function () {
+                    if (actionTypeSelect.value === 'drop') {
+                        generatedEmailInput.setAttribute('required', 'true');
+                        destinationEmail.removeAttribute('required');
+                    } else {
+                        generatedEmailInput.removeAttribute('required');
+                        destinationEmail.setAttribute('required', 'true');
+                    }
+                });
+
+                const creationTimeElements = document.querySelectorAll(".creation-time");
+                creationTimeElements.forEach(element => {
+                    const originalText = element.textContent.trim();
+                    if (originalText) {
+                        element.textContent = formatDateTime(originalText);
+                    }
+                });
+
+                ruleForm.addEventListener('submit', function (event) {
+                    if (!ruleForm.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        spinnerElement.style.display = 'none';
+                    } else {
+                        showLoading();
+                    }
+                    ruleForm.classList.add('was-validated');
+                });
+
+                fetch('/api/emails')
+                    .then(response => response.json())
+                    .then(emails => {
+                        const dropdown = document.getElementById('destination_email');
+
+                        emails.forEach(email => {
+                            const option = document.createElement('option');
+                            option.value = email.value;  // Set the value
+                            option.textContent = email.label;  // Set the display text
+                            dropdown.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching emails:', error);
+                    });
+            });
+
+            // Function to show the loading spinner
+            function showLoading() {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+            }
+        </script>
+
+        <!-- Link to Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+            crossorigin="anonymous"></script>
 </body>
 
 </html>

@@ -56,6 +56,7 @@ def get_emails():
 def index():
     """Render the index page with the list of email addresses."""
     email_addresses = get_email_routing_addresses()
+    email_addresses.sort(key=lambda rule: (rule['destination_email'] == "Drop", rule['destination_email']))
     if email_addresses is None:
         flash("Failed to fetch email routing addresses.", "error")
     return render_template("index.html", email_addresses=email_addresses)
@@ -67,6 +68,8 @@ def add_rule():
     if request.method == "POST":
         generated_email = request.form.get("generated_email")
         destination_email = request.form.get("destination_email")
+        if destination_email == None:
+            destination_email='Drop'
         name = request.form.get("app_name")
         generated_email = generate_random_email(generated_email)
         action_type = request.form.get("action_type")
