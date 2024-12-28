@@ -1,9 +1,12 @@
-import os
 import re
-from venv import logger
-from zoneinfo import ZoneInfo
-from flask import flash, jsonify, redirect, session, url_for
+import logging
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from flask import flash, redirect, session, url_for
 import requests
+import datetime
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 import datetime
 
 from constants import CLOUDFLARE_API_TOKEN, PLACEHOLDER_EMAIL_DOMAIN, ROUTING_URL
@@ -25,9 +28,8 @@ def delete_email_routing_rule(rule_id):
     else:
         flash(
             f"Failed to delete routing rule: {response.json().get('errors', 'Unknown error')}",
-            "error",
-        )
-        print(f"Error: {response.status_code} - {response.json()}")
+            "error")
+        logging.error(f"Error: {response.status_code} - {response.json()}")
         return False
 
 
@@ -49,7 +51,7 @@ def generate_random_email(text=None):
 
         return f"{'-'.join(words)}@{PLACEHOLDER_EMAIL_DOMAIN}"
     except Exception as e:
-        print(f"Error fetching random words: {e}")
+        logging.error(f"Error fetching random words: {e}")
         return f"fallback-email@{PLACEHOLDER_EMAIL_DOMAIN}"  # Fallback email
 
 
@@ -103,7 +105,7 @@ def add_email_routing_rule(generated_email, destination_email, action_type, name
             f"Failed to add routing rule: {response.json().get('errors', 'Unknown error')}",
             "error",
         )
-        print(f"Error: {response.status_code} - {response.json()}")
+        logging.error(f"Error: {response.status_code} - {response.json()}")
         return False
 
 
@@ -117,7 +119,7 @@ def get_email_routing_addresses():
     if response.status_code == 200:
         return parse_json(response.json().get("result", []))
     else:
-        print(f"Error: {response.status_code} - {response.json()}")
+        logging.error(f"Error: {response.status_code} - {response.json()}")
         return None
 
 
@@ -142,20 +144,20 @@ def get_email_routing_rule(rule_id):
     try:
         response = requests.get(get_url, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        logger.info(f"Response received: {response.json()}")
+        logging.info(f"Response received: {response.json()}")
         result = response.json().get("result", {})
         return get_json(result)
     except requests.exceptions.RequestException as e:
-        logger.error(f"HTTP Request failed: {e}")
+        logging.error(f"HTTP Request failed: {e}")
     except KeyError as e:
-        logger.error(f"Missing expected key in response: {e}")
+        logging.error(f"Missing expected key in response: {e}")
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
+        logging.error(f"An unexpected error occurred: {e}")
 
     return None
 
 
-def updete_rule(email_data):
+def update_rule(email_data):
     """
     Update an email routing rule via Cloudflare API.
     :param email_data: Dictionary containing the updated rule data.
@@ -168,7 +170,7 @@ def updete_rule(email_data):
 
     rule_id = email_data.get("id")
     if not rule_id:
-        logger.error("Invalid email data: 'id' field is missing.")
+        logging.error("Invalid email data: 'id' field is missing.")
         return False
 
     update_url = f"{ROUTING_URL}/{rule_id}"
@@ -184,21 +186,21 @@ def updete_rule(email_data):
         key: email_data[key] for key in allowed_fields if key in email_data
     }
 
-    logger.info(f"Payload to be sent: {filtered_data}")
-    logger.info(f"Request URL: {update_url}")
+    logging.info(f"Payload to be sent: {filtered_data}")
+    logging.info(f"Request URL: {update_url}")
 
     try:
         response = requests.put(update_url, headers=headers, json=filtered_data)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        logger.info(f"Rule updated successfully: {response.json()}")
+        logging.info(f"Rule updated successfully: {response.json()}")
         return True
     except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to update the rule: {e}")
+        logging.error(f"Failed to update the rule: {e}")
         if response is not None and response.text:
-            logger.error(f"Response content: {response.text}")
+            logging.error(f"Response content: {response.text}")
         return False
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
+        logging.error(f"An unexpected error occurred: {e}")
         return False
 
 
@@ -226,7 +228,7 @@ def parse_json(rules):
         # Extract the name and split it into 'name' and 'creation_time' if possible
         name = rule.get("name", "No+creation+time+available")
         name_and_date = name.split("@") if "@" in name else ["---", name]
-        print(name_and_date)
+        logging.info(f"Name and date: {name_and_date}")
         rule_data = {
             "creation_time": name_and_date[1],
             "name": name_and_date[0],
@@ -273,3 +275,42 @@ def login_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
+def handle_destination_email(destination_email, action_type):
+    if not destination_email or action_type == "drop":
+        return "Drop"
+    return destination_email
+
+
+def append_timestamp_to_name(name):
+    try:
+        romania_time = datetime.datetime.now(ZoneInfo("Europe/Bucharest"))
+    except ZoneInfoNotFoundError:
+        logging.error("ZoneInfo key 'Europe/Bucharest' not found. Using UTC time instead.")
+        romania_time = datetime.datetime.now(datetime.timezone.utc)
+    return f"{name}@Rule created at {romania_time}"
+
+
+def process_rule(rule_id, generated_email, destination_email, action_type, name):
+    if not rule_id:
+        return add_email_routing_rule(generated_email, destination_email, action_type, name)
+    else:
+        email_data = {
+            "id": rule_id,
+            "actions": [{"type": action_type}],
+            "matchers": [
+                {
+                    "field": "to",
+                    "type": "literal",
+                    "value": generated_email,
+                }
+            ],
+            "enabled": True,
+            "name": name,
+        }
+
+        if action_type != "drop":
+            email_data["actions"][0]["value"] = [destination_email]
+
+        return update_rule(email_data)
+

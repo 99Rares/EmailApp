@@ -1,6 +1,17 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session
+from flask import Flask, jsonify, render_template, request, flash, redirect, url_for, session
 from constants import EMAIL_LIST, USER_CREDENTIALS
-from logic import *
+from logic import (
+    handle_destination_email,
+    generate_random_email,
+    append_timestamp_to_name,
+    get_rule_id_by_generated_email,
+    process_rule,
+    get_email_routing_addresses,
+    delete_email_routing_rule,
+    get_email_routing_rule,
+    update_rule,
+    login_required
+)
 import os
 import bcrypt
 
@@ -75,48 +86,15 @@ def add_rule():
         name = request.form.get("app_name")
         action_type = request.form.get("action_type")
 
-        # Handle cases where the action type is 'drop'
-        if not destination_email or action_type == "drop":
-            destination_email = "Drop"
-
-        # Generate a random email if needed
+        destination_email = handle_destination_email(destination_email, action_type)
         generated_email = generate_random_email(generated_email)
-
-        # Append timestamp to the name for uniqueness
-        romania_time = datetime.datetime.now(ZoneInfo("Europe/Bucharest"))
-        name = f"{name}@Rule created at {romania_time}"
+        name = append_timestamp_to_name(name)
 
         if generated_email and destination_email:
-            # Check if a rule already exists for this generated email
             rule_id = get_rule_id_by_generated_email(generated_email)
-
-            if not rule_id:
-                # Try to add the email routing rule
-                success = add_email_routing_rule(
-                    generated_email, destination_email, action_type, name
-                )
-            else:
-                # Update the existing rule if it already exists
-                email_data = {
-                    "id": rule_id,
-                    "actions": [{"type": action_type}],
-                    "matchers": [
-                        {
-                            "field": "to",
-                            "type": "literal",
-                            "value": generated_email,
-                        }
-                    ],
-                    "enabled": True,
-                    "name": name,
-                }
-
-                # Add 'value' to the actions only if the action is not 'drop'
-                if action_type != "drop":
-                    email_data["actions"][0]["value"] = [destination_email]
-
-                # Attempt to update the rule
-                success = updete_rule(email_data)
+            success = process_rule(
+                rule_id, generated_email, destination_email, action_type, name
+            )
 
             if success:
                 flash("Rule added or updated successfully.", "success")
@@ -157,7 +135,7 @@ def drop_rule(rule_id):
         return redirect(url_for("index"))
 
     # Attempt to update the rule
-    success = updete_rule(email_data)
+    success = update_rule(email_data)
 
     if success:
         flash("Rule updated successfully to drop.", "success")
