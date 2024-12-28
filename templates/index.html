@@ -71,21 +71,29 @@
                 </thead>
                 <tbody>
                     {% for rule in email_addresses %}
-                    <tr>
+                    <tr onclick="populateForm(this)" data-generated-email="{{ rule.generated_email }}"
+                        data-destination-email="{{ rule.destination_email }}" data-service-name="{{ rule.name }}"
+                        data-action-type="forward"> <!-- Adjust based on your data -->
                         <td data-label="Creation Time" class="creation-time">{{ rule.creation_time }}</td>
                         <td data-label="Name">{{ rule.name }}</td>
                         <td data-label="Generated Email">{{ rule.generated_email }}</td>
                         <td data-label="Destination Email" class="destination-email">{{ rule.destination_email }}</td>
                         <td data-label="Actions">
+                            <form action="{{ url_for('drop_rule', rule_id=rule.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-warning btn-sm" onclick="showLoading()">
+                                    <i class="bi bi-envelope-x"></i> Drop Email
+                                </button>
+                            </form> 
                             <form action="{{ url_for('delete_rule', rule_id=rule.id) }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-danger btn-sm" onclick="showLoading()">
                                     <i class="bi bi-trash"></i> Delete
                                 </button>
-                            </form>
+                            </form>                           
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
+
             </table>
         </div>
         {% else %}
@@ -159,6 +167,43 @@
 
         <!-- JavaScript to Format Dates and Show Spinner -->
         <script>
+
+            function populateForm(row) {
+                // Clear previous selection
+                const rows = document.querySelectorAll('#emailTable tbody tr');
+                rows.forEach(r => r.classList.remove('selected'));
+
+                // Highlight the selected row
+                row.classList.add('selected');
+                // Extract data attributes from the clicked row
+                const generatedEmail = row.dataset.generatedEmail;
+                const destinationEmail = row.dataset.destinationEmail;
+                const serviceName = row.dataset.serviceName;
+                const actionType = row.dataset.actionType;
+
+                // Populate the form fields
+                document.getElementById('generated_email').value = generatedEmail || '';
+                document.getElementById('destination_email').value = destinationEmail || '';
+                document.getElementById('app_name').value = serviceName || '';
+                document.getElementById('action_type').value = actionType || 'forward';
+
+                // Adjust required attributes based on action type
+                const actionTypeSelect = document.getElementById('action_type');
+                const generatedEmailInput = document.getElementById('generated_email');
+                const destinationEmailInput = document.getElementById('destination_email');
+
+                if (actionType === 'drop') {
+                    generatedEmailInput.setAttribute('required', 'true');
+                    destinationEmailInput.removeAttribute('required');
+                } else {
+                    generatedEmailInput.removeAttribute('required');
+                    destinationEmailInput.setAttribute('required', 'true');
+                }
+
+                // Optionally scroll to the form
+                document.getElementById('ruleForm').scrollIntoView({ behavior: 'smooth' });
+            }
+
             setTimeout(() => {
                 const alerts = document.querySelectorAll('.alert');
                 alerts.forEach(alert => {

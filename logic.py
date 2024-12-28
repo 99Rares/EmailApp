@@ -1,5 +1,6 @@
 import os
 import re
+from venv import logger
 from zoneinfo import ZoneInfo
 from flask import flash, jsonify, redirect, session, url_for
 import requests
@@ -86,12 +87,11 @@ def add_email_routing_rule(generated_email, destination_email, action_type, name
     if action_type == "forward" and destination_email:
         action["value"] = [destination_email]
 
-    romania_time = datetime.datetime.now(ZoneInfo("Europe/Bucharest"))
     data = {
         "matchers": [{"type": "literal", "field": "to", "value": generated_email}],
         "actions": [action],
         "enabled": True,
-        "name": f"{name}@Rule created at {romania_time}",
+        "name": name,
     }
 
     response = requests.post(ROUTING_URL, headers=headers, json=data)
@@ -120,6 +120,99 @@ def get_email_routing_addresses():
         print(f"Error: {response.status_code} - {response.json()}")
         return None
 
+
+def get_json(data):
+    """Parse the JSON result (example function, replace with actual implementation)."""
+    # Example: Return the data directly or process it as needed
+    return data
+
+
+def get_email_routing_rule(rule_id):
+    """
+    Fetch the list of email routing addresses from Cloudflare by rule ID.
+    :param rule_id: ID of the email routing rule.
+    :return: Parsed email routing rule or None if an error occurs.
+    """
+    headers = {
+        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
+        "Content-Type": "application/json",
+    }
+    get_url = f"{ROUTING_URL}/{rule_id}"
+
+    try:
+        response = requests.get(get_url, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        logger.info(f"Response received: {response.json()}")
+        result = response.json().get("result", {})
+        return get_json(result)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"HTTP Request failed: {e}")
+    except KeyError as e:
+        logger.error(f"Missing expected key in response: {e}")
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")
+
+    return None
+
+
+def updete_rule(email_data):
+    """
+    Update an email routing rule via Cloudflare API.
+    :param email_data: Dictionary containing the updated rule data.
+    :return: True if the update is successful, False otherwise.
+    """
+    headers = {
+        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
+        "Content-Type": "application/json",
+    }
+
+    rule_id = email_data.get("id")
+    if not rule_id:
+        logger.error("Invalid email data: 'id' field is missing.")
+        return False
+
+    update_url = f"{ROUTING_URL}/{rule_id}"
+
+    # Remove the "value" field from "drop" actions
+    if "actions" in email_data:
+        for action in email_data["actions"]:
+            if action.get("type") == "drop":
+                action.pop("value", None)
+
+    allowed_fields = {"actions", "matchers", "enabled", "name"}
+    filtered_data = {
+        key: email_data[key] for key in allowed_fields if key in email_data
+    }
+
+    logger.info(f"Payload to be sent: {filtered_data}")
+    logger.info(f"Request URL: {update_url}")
+
+    try:
+        response = requests.put(update_url, headers=headers, json=filtered_data)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        logger.info(f"Rule updated successfully: {response.json()}")
+        return True
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to update the rule: {e}")
+        if response is not None and response.text:
+            logger.error(f"Response content: {response.text}")
+        return False
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")
+        return False
+
+
+def get_rule_id_by_generated_email(generated_email):
+    """
+    Retrieves the rule ID for a given generated email.
+    :param generated_email: The generated email address to search for.
+    :return: The rule ID if found, otherwise None.
+    """
+    rules = get_email_routing_addresses()  # Replace with your function to fetch rules
+    for rule in rules:
+        if rule.get("generated_email") == generated_email:
+            return rule.get("id")
+    return None
 
 def parse_json(rules):
     parsed_rules = []
