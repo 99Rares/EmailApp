@@ -71,3 +71,8 @@ input:focus::placeholder {
     color: #888;
     /* Slightly darker gray when focused */
 }
+
+tr.selected {
+    background-color: #007bff !important;
+    color: #fff;
+}
