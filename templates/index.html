@@ -83,12 +83,12 @@
                                 <button type="submit" class="btn btn-warning btn-sm" onclick="showLoading()">
                                     <i class="bi bi-envelope-x"></i> Drop Email
                                 </button>
-                            </form> 
+                            </form>
                             <form action="{{ url_for('delete_rule', rule_id=rule.id) }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-danger btn-sm" onclick="showLoading()">
                                     <i class="bi bi-trash"></i> Delete
                                 </button>
-                            </form>                           
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
@@ -165,7 +165,6 @@
             </form>
         </div>
 
-        <!-- JavaScript to Format Dates and Show Spinner -->
         <script>
 
             function populateForm(row) {
