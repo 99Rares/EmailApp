@@ -48,7 +48,7 @@
         <div class="mb-3">
             <label for="destinationFilter" class="form-label">Filter by Destination Email:</label>
             <select id="destinationFilter" class="form-select">
-                <option value="">Show All</option>
+                <option selected value="NoDrop">Show Emails</option>
                 {% set unique_emails = email_addresses | map(attribute='destination_email') | list | unique %}
                 {% for email in unique_emails %}
                 <option value="{{ email }}">{{ email }}</option>
@@ -110,12 +110,19 @@
 
                 rows.forEach(row => {
                     const destinationEmail = row.querySelector('.destination-email').textContent.toLowerCase();
-                    if (!filterValue || destinationEmail === filterValue) {
+                    if (filterValue === 'nodrop' && destinationEmail !== 'drop') {
+                        row.style.display = '';
+                    } else if (!filterValue || destinationEmail === filterValue) {
                         row.style.display = '';
                     } else {
                         row.style.display = 'none';
                     }
                 });
+            });
+
+            // Trigger the change event on page load to apply the default filter
+            document.addEventListener('DOMContentLoaded', function () {
+                document.getElementById('destinationFilter').dispatchEvent(new Event('change'));
             });
         </script>
 
