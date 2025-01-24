@@ -9,7 +9,12 @@ import datetime
 logging.basicConfig(level=logging.INFO)
 import datetime
 
-from constants import CLOUDFLARE_API_TOKEN, PLACEHOLDER_EMAIL_DOMAIN, ROUTING_URL
+from constants import (
+    CLOUDFLARE_API_TOKEN,
+    CLOUDFLARE_ZONE_ID,
+    PLACEHOLDER_EMAIL_DOMAIN,
+    ROUTING_URL,
+)
 
 
 # Function to delete an email routing rule by ID
@@ -28,7 +33,8 @@ def delete_email_routing_rule(rule_id):
     else:
         flash(
             f"Failed to delete routing rule: {response.json().get('errors', 'Unknown error')}",
-            "error")
+            "error",
+        )
         logging.error(f"Error: {response.status_code} - {response.json()}")
         return False
 
@@ -38,18 +44,18 @@ def generate_random_email(text=None):
     try:
         # Remove domain if '@' is present
         text = text.split("@")[0] if text else ""
-        words = identify_and_split(text) if text else []
+        words, separator = identify_and_split(text) if text else []
 
         # Fetch additional random words as needed
         missing_words = 3 - len(words)
-        if missing_words > 0:
+        if missing_words > 0 and separator != ".":
             response = requests.get(
                 f"https://random-word-api.vercel.app/api?words={missing_words}&length=5"
             )
             response.raise_for_status()
             words.extend(response.json())
 
-        return f"{'-'.join(words)}@{PLACEHOLDER_EMAIL_DOMAIN}"
+        return f"{separator.join(words)}@{PLACEHOLDER_EMAIL_DOMAIN}"
     except Exception as e:
         logging.error(f"Error fetching random words: {e}")
         return f"fallback-email@{PLACEHOLDER_EMAIL_DOMAIN}"  # Fallback email
@@ -62,14 +68,14 @@ def identify_and_split(text):
 
     if len(unique_separators) == 1:
         # If there's a single unique separator, split by it
-        return text.split(unique_separators[0])
+        return text.split(unique_separators[0]), unique_separators[0]
     elif len(unique_separators) > 1:
         # If there are multiple separators, split by all of them
         pattern = f"[{''.join(map(re.escape, unique_separators))}]+"
-        return re.split(pattern, text)
+        return re.split(pattern, text), unique_separators[0]
     else:
         # If no separators are found, return the text as a single-element list
-        return [text]
+        return [text], "-"
 
 
 # Function to add a new email routing rule
@@ -110,17 +116,38 @@ def add_email_routing_rule(generated_email, destination_email, action_type, name
 
 
 def get_email_routing_addresses():
-    """Fetch the list of email routing addresses from Cloudflare."""
+    ROUTING_URL_GET = "https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing/rules"
+    """Fetch the list of all email routing rules from Cloudflare, handling pagination."""
     headers = {
         "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
         "Content-Type": "application/json",
     }
-    response = requests.get(ROUTING_URL, headers=headers)
-    if response.status_code == 200:
-        return parse_json(response.json().get("result", []))
-    else:
-        logging.error(f"Error: {response.status_code} - {response.json()}")
-        return None
+    page = 1
+    all_results = []
+    per_page = 50
+
+    while True:
+        response = requests.get(
+            f"{ROUTING_URL_GET.format(zone_id=CLOUDFLARE_ZONE_ID)}?page={page}&per_page={per_page}",
+            headers=headers,
+        )
+        if response.status_code == 200:
+            data = response.json()
+            results = data.get("result", [])
+            all_results.extend(results)
+
+            # Use total_count and per_page to calculate the total number of pages
+            result_info = data.get("result_info", {})
+            total_count = result_info.get("total_count", 0)
+            if page * per_page >= total_count:
+                break
+
+            page += 1
+        else:
+            logging.error(f"Error: {response.status_code} - {response.json()}")
+            break
+
+    return parse_json(all_results)
 
 
 def get_json(data):
@@ -216,6 +243,7 @@ def get_rule_id_by_generated_email(generated_email):
             return rule.get("id")
     return None
 
+
 def parse_json(rules):
     parsed_rules = []
 
@@ -276,6 +304,7 @@ def login_required(f):
 
     return decorated_function
 
+
 def handle_destination_email(destination_email, action_type):
     if not destination_email or action_type == "drop":
         return "Drop"
@@ -286,14 +315,18 @@ def append_timestamp_to_name(name):
     try:
         romania_time = datetime.datetime.now(ZoneInfo("Europe/Bucharest"))
     except ZoneInfoNotFoundError:
-        logging.error("ZoneInfo key 'Europe/Bucharest' not found. Using UTC time instead.")
+        logging.error(
+            "ZoneInfo key 'Europe/Bucharest' not found. Using UTC time instead."
+        )
         romania_time = datetime.datetime.now(datetime.timezone.utc)
     return f"{name}@Rule created at {romania_time}"
 
 
 def process_rule(rule_id, generated_email, destination_email, action_type, name):
     if not rule_id:
-        return add_email_routing_rule(generated_email, destination_email, action_type, name)
+        return add_email_routing_rule(
+            generated_email, destination_email, action_type, name
+        )
     else:
         email_data = {
             "id": rule_id,
@@ -313,4 +346,3 @@ def process_rule(rule_id, generated_email, destination_email, action_type, name)
             email_data["actions"][0]["value"] = [destination_email]
 
         return update_rule(email_data)
-
