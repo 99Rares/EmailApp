@@ -44,7 +44,7 @@ def generate_random_email(text=None):
     try:
         # Remove domain if '@' is present
         text = text.split("@")[0] if text else ""
-        words, separator = identify_and_split(text) if text else [],'-'
+        words, separator = (identify_and_split(text) if text else ([], '-'))
 
         # Fetch additional random words as needed
         missing_words = 3 - len(words)
@@ -62,6 +62,9 @@ def generate_random_email(text=None):
 
 
 def identify_and_split(text):
+    if not text:
+        return [], "-"
+
     # Use regular expression to find the separator(s)
     separators = re.findall(r"[^a-zA-Z0-9]+", text)
     unique_separators = list(set(separators))
@@ -71,11 +74,12 @@ def identify_and_split(text):
         return text.split(unique_separators[0]), unique_separators[0]
     elif len(unique_separators) > 1:
         # If there are multiple separators, split by all of them
-        pattern = f"[{''.join(map(re.escape, unique_separators))}]+"
+        pattern = "|".join(map(re.escape, unique_separators))
         return re.split(pattern, text), unique_separators[0]
     else:
         # If no separators are found, return the text as a single-element list
         return [text], "-"
+
 
 
 # Function to add a new email routing rule
