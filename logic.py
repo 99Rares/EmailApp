@@ -45,7 +45,8 @@ def generate_random_email(text=None):
         # Remove domain if '@' is present
         text = text.split("@")[0] if text else ""
         words, separator = (identify_and_split(text) if text else ([], '-'))
-
+        if separator != ".":
+            separator = "-"
         # Fetch additional random words as needed
         missing_words = 3 - len(words)
         if missing_words > 0 and separator != ".":
