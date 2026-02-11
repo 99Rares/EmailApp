@@ -1,9 +1,9 @@
-import re
 import logging
+import re
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-from flask import flash, redirect, session, url_for
+
 import requests
-import datetime
+from flask import flash, redirect, session, url_for
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -121,7 +121,7 @@ def add_email_routing_rule(generated_email, destination_email, action_type, name
 
 
 def get_email_routing_addresses():
-    ROUTING_URL_GET = "https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing/rules"
+    routing_url_get = "https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing/rules"
     """Fetch the list of all email routing rules from Cloudflare, handling pagination."""
     headers = {
         "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
@@ -133,7 +133,7 @@ def get_email_routing_addresses():
 
     while True:
         response = requests.get(
-            f"{ROUTING_URL_GET.format(zone_id=CLOUDFLARE_ZONE_ID)}?page={page}&per_page={per_page}",
+            f"{routing_url_get.format(zone_id=CLOUDFLARE_ZONE_ID)}?page={page}&per_page={per_page}",
             headers=headers,
         )
         if response.status_code == 200:

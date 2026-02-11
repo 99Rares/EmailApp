@@ -47,6 +47,7 @@ def logout():
         session.pop("user", None)
         flash("You have been logged out.", "info")
         return redirect(url_for("login"))
+    return None
 
 
 @app.route("/api/emails", methods=["GET"])
@@ -102,6 +103,7 @@ def add_rule():
                 flash("Failed to add or update the rule.", "danger")
 
         return redirect(url_for("index"))
+    return None
 
 
 @app.route("/delete-rule/<rule_id>", methods=["POST"])
