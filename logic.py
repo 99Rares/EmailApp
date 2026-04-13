@@ -1,9 +1,12 @@
 import logging
 import re
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from generate_words import get_random_words
 
 import requests
 from flask import flash, redirect, session, url_for
+
+WORD_LENGTH = 5
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,11 +53,8 @@ def generate_random_email(text=None):
         # Fetch additional random words as needed
         missing_words = 3 - len(words)
         if missing_words > 0 and separator != ".":
-            response = requests.get(
-                f" https://random-word-api.herokuapp.com/word?number={missing_words}&length=5"
-            )
-            response.raise_for_status()
-            words.extend(response.json())
+            new_words = get_random_words(missing_words, WORD_LENGTH)
+            words.extend(new_words)
 
         return f"{separator.join(words)}@{PLACEHOLDER_EMAIL_DOMAIN}"
     except Exception as e:
