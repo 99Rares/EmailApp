@@ -18,6 +18,7 @@
             <h1>Cloudflare Email Routing Rules</h1>
             <!-- Logout Button -->
             <form action="{{ url_for('logout') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-danger">
                     <i class="bi bi-box-arrow-right"></i> Logout
                 </button>
@@ -45,16 +46,17 @@
         {% endwith %}
 
         <!-- Dynamic Filter for Destination Email -->
-        <div class="mb-3">
+        <form method="GET" action="{{ url_for('index') }}" class="mb-3">
             <label for="destinationFilter" class="form-label">Filter by Destination Email:</label>
-            <select id="destinationFilter" class="form-select">
-                <option selected value="NoDrop">Show Emails</option>
-                {% set unique_emails = email_addresses | map(attribute='destination_email') | list | unique %}
-                {% for email in unique_emails %}
-                <option value="{{ email }}">{{ email }}</option>
+            <select id="destinationFilter" name="destination" class="form-select">
+                <option value="non_drop" {% if selected_destination == 'non_drop' %}selected{% endif %}>Show Emails</option>
+                {% for email in destination_emails %}
+                <option value="{{ email }}" {% if selected_destination == email %}selected{% endif %}>{{ email }}</option>
                 {% endfor %}
+                <option value="Drop" {% if selected_destination == 'Drop' %}selected{% endif %}>Drop</option>
             </select>
-        </div>
+            <button type="submit" class="btn btn-outline-primary mt-2">Apply filter</button>
+        </form>
 
         <!-- Display Parsed Email Routing Rules in a Table -->
         {% if email_addresses %}
@@ -71,21 +73,23 @@
                 </thead>
                 <tbody>
                     {% for rule in email_addresses %}
-                    <tr onclick="populateForm(this)" data-generated-email="{{ rule.generated_email }}"
+                    <tr data-generated-email="{{ rule.generated_email }}"
                         data-destination-email="{{ rule.destination_email }}" data-service-name="{{ rule.name }}"
-                        data-action-type="forward"> <!-- Adjust based on your data -->
+                        data-action-type="{{ 'drop' if rule.destination_email == 'Drop' else 'forward' }}">
                         <td data-label="Creation Time" class="creation-time">{{ rule.creation_time }}</td>
                         <td data-label="Name">{{ rule.name }}</td>
                         <td data-label="Generated Email">{{ rule.generated_email }}</td>
                         <td data-label="Destination Email" class="destination-email">{{ rule.destination_email }}</td>
                         <td data-label="Actions">
                             <form action="{{ url_for('drop_rule', rule_id=rule.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-warning btn-sm" onclick="showLoading()">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-warning btn-sm">
                                     <i class="bi bi-envelope-x"></i> Drop Email
                                 </button>
                             </form>
                             <form action="{{ url_for('delete_rule', rule_id=rule.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="showLoading()">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger btn-sm">
                                     <i class="bi bi-trash"></i> Delete
                                 </button>
                             </form>
@@ -102,37 +106,12 @@
         </div>
         {% endif %}
 
-        <!-- JavaScript for Dynamic Filtering -->
-        <script>
-            document.getElementById('destinationFilter').addEventListener('change', function () {
-                const filterValue = this.value.toLowerCase();
-                const rows = document.querySelectorAll('#emailTable tbody tr');
-
-                rows.forEach(row => {
-                    const destinationEmail = row.querySelector('.destination-email').textContent.toLowerCase();
-                    if (filterValue === 'nodrop' && destinationEmail !== 'drop') {
-                        row.style.display = '';
-                    } else if (!filterValue || destinationEmail === filterValue) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-            });
-
-            // Trigger the change event on page load to apply the default filter
-            document.addEventListener('DOMContentLoaded', function () {
-                document.getElementById('destinationFilter').dispatchEvent(new Event('change'));
-            });
-        </script>
-
-
-
         <!-- Form to Add a New Email Routing Rule -->
         <div class="container my-5 bg-dark">
             <h2 class="text-center mb-4">Add Email Routing Rule</h2>
             <form id="ruleForm" action="{{ url_for('add_rule') }}" method="POST" class="needs-validation" novalidate
-                onsubmit="showLoading()">
+>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <label for="generated_email" class="form-label">Generated Text</label>
                     <input type="text" id="generated_email" name="generated_email"
@@ -153,6 +132,9 @@
                     <select id="destination_email" name="destination_email" class="form-select bg-dark text-light"
                         required>
                         <option value="" disabled selected>Select an email</option>
+                        {% for email in destination_emails %}
+                        <option value="{{ email }}">{{ email }}</option>
+                        {% endfor %}
                     </select>
                     <div class="invalid-feedback">
                         Please select an email.
@@ -172,120 +154,8 @@
             </form>
         </div>
 
-        <script>
 
-            function populateForm(row) {
-                // Clear previous selection
-                const rows = document.querySelectorAll('#emailTable tbody tr');
-                rows.forEach(r => r.classList.remove('selected'));
-
-                // Highlight the selected row
-                row.classList.add('selected');
-                // Extract data attributes from the clicked row
-                const generatedEmail = row.dataset.generatedEmail;
-                const destinationEmail = row.dataset.destinationEmail;
-                const serviceName = row.dataset.serviceName;
-                const actionType = row.dataset.actionType;
-
-                // Populate the form fields
-                document.getElementById('generated_email').value = generatedEmail || '';
-                document.getElementById('destination_email').value = destinationEmail || '';
-                document.getElementById('app_name').value = serviceName || '';
-                document.getElementById('action_type').value = actionType || 'forward';
-
-                // Adjust required attributes based on action type
-                const actionTypeSelect = document.getElementById('action_type');
-                const generatedEmailInput = document.getElementById('generated_email');
-                const destinationEmailInput = document.getElementById('destination_email');
-
-                if (actionType === 'drop') {
-                    generatedEmailInput.setAttribute('required', 'true');
-                    destinationEmailInput.removeAttribute('required');
-                } else {
-                    generatedEmailInput.removeAttribute('required');
-                    destinationEmailInput.setAttribute('required', 'true');
-                }
-
-                // Optionally scroll to the form
-                document.getElementById('ruleForm').scrollIntoView({ behavior: 'smooth' });
-            }
-
-            setTimeout(() => {
-                const alerts = document.querySelectorAll('.alert');
-                alerts.forEach(alert => {
-                    alert.classList.remove('show');
-                    alert.classList.add('fade');
-                    setTimeout(() => alert.remove(), 150); // Delay to allow fade-out animation
-                });
-            }, 10000);
-
-            // Function to format the date to only date and time
-            function formatDateTime(dateTimeString) {
-                const date = new Date(dateTimeString);
-                const formattedDate = date.toLocaleDateString().replaceAll("/", ".");
-                const formattedTime = date.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
-                return `${formattedDate} ${formattedTime}`;
-            }
-
-            // Select all elements with the class 'creation-time' and format their text content
-            document.addEventListener("DOMContentLoaded", function () {
-                const actionTypeSelect = document.getElementById('action_type');
-                const generatedEmailInput = document.getElementById('generated_email');
-                const ruleForm = document.getElementById('ruleForm');
-                const spinnerElement = document.getElementById('loadingOverlay');
-                const destinationEmail = document.getElementById('destination_email');
-
-                actionTypeSelect.addEventListener('change', function () {
-                    if (actionTypeSelect.value === 'drop') {
-                        generatedEmailInput.setAttribute('required', 'true');
-                        destinationEmail.removeAttribute('required');
-                    } else {
-                        generatedEmailInput.removeAttribute('required');
-                        destinationEmail.setAttribute('required', 'true');
-                    }
-                });
-
-                const creationTimeElements = document.querySelectorAll(".creation-time");
-                creationTimeElements.forEach(element => {
-                    const originalText = element.textContent.trim();
-                    if (originalText) {
-                        element.textContent = formatDateTime(originalText);
-                    }
-                });
-
-                ruleForm.addEventListener('submit', function (event) {
-                    if (!ruleForm.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        spinnerElement.style.display = 'none';
-                    } else {
-                        showLoading();
-                    }
-                    ruleForm.classList.add('was-validated');
-                });
-
-                fetch('/api/emails')
-                    .then(response => response.json())
-                    .then(emails => {
-                        const dropdown = document.getElementById('destination_email');
-
-                        emails.forEach(email => {
-                            const option = document.createElement('option');
-                            option.value = email.value;  // Set the value
-                            option.textContent = email.label;  // Set the display text
-                            dropdown.appendChild(option);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error fetching emails:', error);
-                    });
-            });
-
-            // Function to show the loading spinner
-            function showLoading() {
-                document.getElementById('loadingOverlay').style.display = 'flex';
-            }
-        </script>
+        <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 
         <!-- Link to Bootstrap JS -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

@@ -5,10 +5,13 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-COPY . .
 
+COPY requirements.txt .
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN addgroup --system app && adduser --system --ingroup app app && chown -R app:app /app
+USER app
 
 # Expose port 5000 for the Flask app
 EXPOSE 5000

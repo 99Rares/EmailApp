@@ -1,7 +1,12 @@
-from flask import Flask, jsonify, render_template, request, flash, redirect, url_for, session
-from constants import EMAIL_LIST, USER_CREDENTIALS
-from logic import (
-    handle_destination_email,
+import os
+
+import bcrypt
+from flask import Flask, abort, flash, jsonify, redirect, render_template, request, session, url_for
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
+from email_app.config import EMAIL_LIST, USER_CREDENTIALS
+from email_app.services.rules import (
     generate_random_email,
     append_timestamp_to_name,
     get_rule_id_by_generated_email,
@@ -12,14 +17,46 @@ from logic import (
     update_rule,
     login_required
 )
-import os
-import bcrypt
-
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY")
+secret_key = os.environ.get("SECRET_KEY")
+if not secret_key:
+    raise RuntimeError("SECRET_KEY must be set before starting EmailApp.")
+
+app.config.update(
+    SECRET_KEY=secret_key,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "true").lower()
+    in {"1", "true", "yes"},
+)
+csrf = CSRFProtect(app)
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri=os.environ.get("RATELIMIT_STORAGE_URI", "memory://"),
+)
+
+ALLOWED_DESTINATIONS = {email.strip() for email in EMAIL_LIST.split(",") if email.strip()}
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; style-src 'self' https://cdn.jsdelivr.net; "
+        "script-src 'self' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; "
+        "img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-Frame-Options"] = "DENY"
+    if "user" in session:
+        response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
 def login():
     if request.method == "POST":
         username = request.form["username"]
@@ -41,7 +78,7 @@ def login():
     return render_template("login.html")
 
 
-@app.route("/logout", methods=["GET", "POST"])
+@app.route("/logout", methods=["POST"])
 def logout():
     if request.method == "POST":
         session.pop("user", None)
@@ -51,6 +88,7 @@ def logout():
 
 
 @app.route("/api/emails", methods=["GET"])
+@login_required
 def get_emails():
     # Get the emails list from the environment variable
     emails_list = EMAIL_LIST
@@ -67,18 +105,32 @@ def get_emails():
 def index():
     """Render the index page with the list of email addresses."""
     email_addresses = get_email_routing_addresses()
+    email_addresses = email_addresses or []
+    selected_destination = request.args.get("destination", "non_drop")
+    if selected_destination == "non_drop":
+        email_addresses = [
+            rule for rule in email_addresses if rule["destination_email"] != "Drop"
+        ]
+    elif selected_destination:
+        email_addresses = [
+            rule
+            for rule in email_addresses
+            if rule["destination_email"] == selected_destination
+        ]
     email_addresses.sort(
-        key=lambda rule: (
-            rule["destination_email"] == "Drop",
-            rule["destination_email"],
-        )
+        key=lambda rule: (rule["destination_email"] == "Drop", rule["destination_email"])
     )
-    if email_addresses is None:
-        flash("Failed to fetch email routing addresses.", "error")
-    return render_template("index.html", email_addresses=email_addresses)
+    if not email_addresses:
+        flash("No matching email routing rules found.", "info")
+    return render_template(
+        "index.html",
+        email_addresses=email_addresses,
+        destination_emails=sorted(ALLOWED_DESTINATIONS),
+        selected_destination=selected_destination,
+    )
 
 
-@app.route("/add-rule", methods=["GET", "POST"])
+@app.route("/add-rule", methods=["POST"])
 @login_required
 def add_rule():
     if request.method == "POST":
@@ -87,7 +139,13 @@ def add_rule():
         name = request.form.get("app_name")
         action_type = request.form.get("action_type")
 
-        destination_email = handle_destination_email(destination_email, action_type)
+        if action_type not in {"forward", "drop"}:
+            abort(400, "Invalid action type")
+
+        if action_type == "forward" and destination_email not in ALLOWED_DESTINATIONS:
+            abort(400, "Destination email is not allowed")
+
+        destination_email = "Drop" if action_type == "drop" else destination_email
         generated_email = generate_random_email(generated_email)
         name = append_timestamp_to_name(name)
 
@@ -113,7 +171,7 @@ def delete_rule(rule_id):
     return redirect(url_for("index"))
 
 
-@app.route("/drop-rule/<rule_id>", methods=["GET", "POST"])
+@app.route("/drop-rule/<rule_id>", methods=["POST"])
 @login_required
 def drop_rule(rule_id):
     """

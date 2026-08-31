@@ -31,6 +31,9 @@ EmailApp is a Flask-based web application designed to manage Cloudflare email ro
     ```env
     # Flask configuration
     SECRET_KEY='your-secret-key'
+    # Set false only for local HTTP development; keep true behind HTTPS.
+    SESSION_COOKIE_SECURE='false'
+    RATELIMIT_STORAGE_URI='memory://'  # Use Redis in multi-instance deployments.
     
     # Cloudflare API configuration
     ACCOUNT_ID='your-account-id'
@@ -60,11 +63,11 @@ EmailApp is a Flask-based web application designed to manage Cloudflare email ro
 4. **Delete Rule**: Use the delete option next to a rule to remove it.
    
 ## Project Structure
-- `app/`: Contains the Flask application code.
-    - `routes.py`: Defines the application routes.
-    - `models.py`: Manages the data models.
-    - `templates/`: Contains HTML templates for the UI.
-    - `static/`: Stores static files such as CSS and JavaScript.
+- `app.py`: Flask routes and Gunicorn entrypoint.
+- `email_app/config.py`: Environment-backed settings.
+- `email_app/services/`: Cloudflare client, routing rules, and word generation.
+- `templates/` and `static/`: UI templates and browser assets.
+- `tests/`: Pytest regression and security coverage.
 - `docker-compose.yml`: Configures the Docker services.
 
 - `Dockerfile`: Defines the Docker image for the application.

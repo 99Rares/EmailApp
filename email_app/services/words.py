@@ -1,8 +1,8 @@
 from pathlib import Path
 import random
 
-RAW_WORDS = Path("words.txt")
-FILTERED_WORDS = Path("wordsFiltered.txt")
+RAW_WORDS = Path(__file__).resolve().parents[2] / "words.txt"
+FILTERED_WORDS = Path(__file__).resolve().parents[2] / "wordsFiltered.txt"
 
 
 def create_filtered_file():
