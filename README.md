@@ -34,6 +34,7 @@ EmailApp is a Flask-based web application designed to manage Cloudflare email ro
     # Set false only for local HTTP development; keep true behind HTTPS.
     SESSION_COOKIE_SECURE='false'
     RATELIMIT_STORAGE_URI='memory://'  # Use Redis in multi-instance deployments.
+    RATELIMIT_DEFAULTS='2000 per day,500 per hour'
     
     # Cloudflare API configuration
     ACCOUNT_ID='your-account-id'

@@ -31,10 +31,17 @@ app.config.update(
     in {"1", "true", "yes"},
 )
 csrf = CSRFProtect(app)
+default_rate_limits = [
+    limit.strip()
+    for limit in os.environ.get(
+        "RATELIMIT_DEFAULTS", "2000 per day,500 per hour"
+    ).split(",")
+    if limit.strip()
+]
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=default_rate_limits,
     storage_uri=os.environ.get("RATELIMIT_STORAGE_URI", "memory://"),
 )
 
