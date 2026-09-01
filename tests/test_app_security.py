@@ -49,7 +49,7 @@ def test_login_sets_security_headers(client):
 def test_default_rate_limits_allow_normal_authenticated_use(client):
     import app
 
-    assert app.default_rate_limits == ["2000 per day", "500 per hour"]
+    assert app.default_rate_limits == ["5000 per day", "500 per hour"]
 
 
 def test_add_rule_rejects_unapproved_forwarding_destination(client, monkeypatch):

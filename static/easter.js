@@ -32,6 +32,39 @@
     }
   }
 
+  function getEggCount() {
+    if (window.innerWidth < 576) {
+      return 6;
+    }
+    if (window.innerWidth < 992) {
+      return 10;
+    }
+    if (window.innerWidth < 1400) {
+      return 14;
+    }
+    return 20;
+  }
+
+  function createEgg() {
+    const egg = document.createElement("img");
+    egg.className = "floating-easter-egg";
+    egg.src = "/static/easter-egg.png";
+    egg.alt = "";
+    return egg;
+  }
+
+  function syncEggCount(eggLayer) {
+    const eggCount = getEggCount();
+
+    while (eggLayer.children.length > eggCount) {
+      eggLayer.lastElementChild.remove();
+    }
+
+    while (eggLayer.children.length < eggCount) {
+      eggLayer.appendChild(createEgg());
+    }
+  }
+
   const preference = getSeasonPreference();
   const easterEnabled =
     preference === "easter" ||
@@ -62,14 +95,22 @@
     eggLayer.className = "easter-eggs";
     eggLayer.setAttribute("aria-hidden", "true");
 
-    for (let index = 0; index < 20; index += 1) {
-      const egg = document.createElement("img");
-      egg.className = "floating-easter-egg";
-      egg.src = "/static/easter-egg.png";
-      egg.alt = "";
-      eggLayer.appendChild(egg);
-    }
-
+    syncEggCount(eggLayer);
     document.body.appendChild(eggLayer);
+
+    let resizeFrame = null;
+    window.addEventListener(
+      "resize",
+      () => {
+        if (resizeFrame !== null) {
+          cancelAnimationFrame(resizeFrame);
+        }
+        resizeFrame = requestAnimationFrame(() => {
+          syncEggCount(eggLayer);
+          resizeFrame = null;
+        });
+      },
+      { passive: true },
+    );
   });
 })();

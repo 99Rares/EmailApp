@@ -34,7 +34,7 @@ csrf = CSRFProtect(app)
 default_rate_limits = [
     limit.strip()
     for limit in os.environ.get(
-        "RATELIMIT_DEFAULTS", "2000 per day,500 per hour"
+        "RATELIMIT_DEFAULTS", "5000 per day,500 per hour"
     ).split(",")
     if limit.strip()
 ]
