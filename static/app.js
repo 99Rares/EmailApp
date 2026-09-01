@@ -1,3 +1,16 @@
+function setLoadingSpinnerVisible(visible) {
+  const overlay = document.getElementById("loadingOverlay");
+  if (!overlay) {
+    return;
+  }
+  overlay.classList.toggle("is-visible", visible);
+  overlay.setAttribute("aria-hidden", String(!visible));
+}
+
+window.addEventListener("pageshow", () => {
+  setLoadingSpinnerVisible(false);
+});
+
 function updateRuleFormRequirements(actionType) {
   const generatedEmail = document.getElementById("generated_email");
   const destinationEmail = document.getElementById("destination_email");
@@ -34,7 +47,16 @@ document.addEventListener("DOMContentLoaded", () => {
   actionType.addEventListener("change", () => updateRuleFormRequirements(actionType.value));
   updateRuleFormRequirements(actionType.value);
 
+  document.querySelectorAll("form").forEach((form) => {
+    form.addEventListener("submit", () => setLoadingSpinnerVisible(true));
+  });
+
   document.querySelectorAll("#emailTable tbody tr").forEach((row) => {
-    row.addEventListener("click", () => populateRuleForm(row));
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("button, form, a, input, select, textarea")) {
+        return;
+      }
+      populateRuleForm(row);
+    });
   });
 });

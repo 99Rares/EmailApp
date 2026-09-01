@@ -8,6 +8,7 @@ from flask_wtf.csrf import CSRFProtect
 from email_app.config import EMAIL_LIST, USER_CREDENTIALS
 from email_app.services.rules import (
     generate_random_email,
+    normalize_generated_email,
     append_timestamp_to_name,
     get_rule_id_by_generated_email,
     process_rule,
@@ -146,11 +147,18 @@ def add_rule():
             abort(400, "Destination email is not allowed")
 
         destination_email = "Drop" if action_type == "drop" else destination_email
-        generated_email = generate_random_email(generated_email)
+        existing_email = normalize_generated_email(generated_email)
+        rule_id = (
+            get_rule_id_by_generated_email(existing_email) if existing_email else None
+        )
+        if rule_id:
+            generated_email = existing_email
+        else:
+            generated_email = generate_random_email(generated_email)
+            rule_id = get_rule_id_by_generated_email(generated_email)
         name = append_timestamp_to_name(name)
 
         if generated_email and destination_email:
-            rule_id = get_rule_id_by_generated_email(generated_email)
             success = process_rule(
                 rule_id, generated_email, destination_email, action_type, name
             )

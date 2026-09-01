@@ -42,6 +42,14 @@ def generate_random_email(text=None):
         return f"fallback-email@{PLACEHOLDER_EMAIL_DOMAIN}"
 
 
+def normalize_generated_email(text):
+    """Return a submitted local part as an address in the configured domain."""
+    local_part = (text or "").strip().split("@", 1)[0]
+    if not local_part:
+        return None
+    return f"{local_part}@{PLACEHOLDER_EMAIL_DOMAIN}"
+
+
 def identify_and_split(text):
     if not text:
         return [], "-"
@@ -67,7 +75,6 @@ def add_email_routing_rule(generated_email, destination_email, action_type, name
         cloudflare_client.create_rule(payload)
     except CloudflareAPIError:
         return _operation_failed("add")
-    flash("Routing rule added successfully!", "success")
     return True
 
 

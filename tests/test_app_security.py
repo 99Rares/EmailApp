@@ -1,4 +1,5 @@
 import importlib
+import re
 
 import bcrypt
 import pytest
@@ -23,9 +24,10 @@ def client(monkeypatch):
 
 
 def csrf_token(client):
-    client.get("/login")
-    with client.session_transaction() as current_session:
-        return current_session["csrf_token"]
+    response = client.get("/login")
+    match = re.search(rb'name="csrf_token" value="([^"]+)"', response.data)
+    assert match
+    return match.group(1).decode()
 
 
 def test_login_rejects_missing_csrf_token(client):
@@ -37,6 +39,11 @@ def test_login_sets_security_headers(client):
     response = client.get("/login")
     assert response.headers["X-Frame-Options"] == "DENY"
     assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"]
+    assert b'data-bs-theme="dark"' in response.data
+    assert b"theme.js" in response.data
+    assert b"snow.js" in response.data
+    assert b"easter.js" in response.data
+    assert b"season-controls.js" in response.data
 
 
 def test_add_rule_rejects_unapproved_forwarding_destination(client, monkeypatch):
@@ -57,6 +64,52 @@ def test_add_rule_rejects_unapproved_forwarding_destination(client, monkeypatch)
         },
     )
     assert response.status_code == 400
+
+
+@pytest.mark.parametrize("local_part", ["one", "one-two"])
+def test_add_rule_updates_existing_short_address_without_expanding(
+    client, monkeypatch, local_part
+):
+    import app
+
+    existing_email = f"{local_part}@example.test"
+    monkeypatch.setattr(app, "normalize_generated_email", lambda _: existing_email)
+    monkeypatch.setattr(
+        app,
+        "get_rule_id_by_generated_email",
+        lambda email: "rule-1" if email == existing_email else None,
+    )
+    monkeypatch.setattr(
+        app,
+        "generate_random_email",
+        lambda _: pytest.fail("an existing address must not be expanded"),
+    )
+    processed = {}
+
+    def capture_process_rule(*args):
+        processed["args"] = args
+        return True
+
+    monkeypatch.setattr(app, "process_rule", capture_process_rule)
+    token = csrf_token(client)
+    with client.session_transaction() as current_session:
+        current_session["user"] = "admin"
+
+    response = client.post(
+        "/add-rule",
+        data={
+            "csrf_token": token,
+            "generated_email": local_part,
+            "destination_email": "admin@example.test",
+            "app_name": "test",
+            "action_type": "forward",
+        },
+    )
+
+    assert response.status_code == 302
+    assert processed["args"][:3] == (
+        "rule-1", existing_email, "admin@example.test"
+    )
 
 
 def test_destination_filter_is_applied_server_side(client, monkeypatch):
@@ -98,3 +151,10 @@ def test_table_rows_expose_editable_rule_data(client, monkeypatch):
     response = client.get("/")
     assert b'data-generated-email="edit@example.test"' in response.data
     assert b"/static/app.js" in response.data
+    assert b'class="theme-label">Light mode</span>' in response.data
+    assert b"/static/theme.js" in response.data
+    assert b"/static/snow.js" in response.data
+    assert b"/static/easter.js" in response.data
+    assert b"/static/season-controls.js" in response.data
+    assert b'data-season="christmas"' in response.data
+    assert b'data-season="easter"' in response.data

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -10,12 +10,35 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="stylesheet" href="/static/style.css">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='snow.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='easter.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='particle-interactions.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='season-controls.js') }}" defer></script>
 </head>
 
-<body class="bg-dark text-light">
-    <div class="container bg-dark my-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+<body>
+    <div class="container my-5">
+        <div class="page-header d-flex justify-content-between align-items-center gap-3 mb-4">
             <h1>Cloudflare Email Routing Rules</h1>
+            <div class="d-flex align-items-center justify-content-end gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-secondary theme-toggle" aria-label="Switch to light mode">
+                    <i class="bi bi-sun-fill" aria-hidden="true"></i>
+                    <span class="theme-label">Light mode</span>
+                </button>
+                <div class="dropdown">
+                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-stars" aria-hidden="true"></i>
+                        Season: <span class="season-label">Automatic</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><button type="button" class="dropdown-item" data-season="auto">Automatic</button></li>
+                        <li><button type="button" class="dropdown-item" data-season="christmas">Christmas</button></li>
+                        <li><button type="button" class="dropdown-item" data-season="easter">Easter</button></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button type="button" class="dropdown-item" data-season="off">Off</button></li>
+                    </ul>
+                </div>
             <!-- Logout Button -->
             <form action="{{ url_for('logout') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -23,10 +46,11 @@
                     <i class="bi bi-box-arrow-right"></i> Logout
                 </button>
             </form>
+            </div>
         </div>
 
         <!-- Loading Spinner -->
-        <div id="loadingOverlay" class="overlay">
+        <div id="loadingOverlay" class="overlay" aria-hidden="true" aria-live="polite">
             <div id="loadingSpinner" class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
@@ -60,8 +84,9 @@
 
         <!-- Display Parsed Email Routing Rules in a Table -->
         {% if email_addresses %}
-        <div class="table-responsive card text-bg-dark border border-primary shadow-lg">
-            <table class="table table-striped table-hover table-bordered align-middle table-dark" id="emailTable">
+        <div class="easter-table-scene">
+        <div class="table-responsive card border border-primary shadow-lg">
+            <table class="table table-striped table-hover table-bordered align-middle" id="emailTable">
                 <thead class="bg-secondary text-white">
                     <tr>
                         <th scope="col">Creation Time</th>
@@ -100,6 +125,7 @@
 
             </table>
         </div>
+        </div>
         {% else %}
         <div class="alert alert-info text-center" role="alert">
             No email routing rules found.
@@ -107,7 +133,7 @@
         {% endif %}
 
         <!-- Form to Add a New Email Routing Rule -->
-        <div class="container my-5 bg-dark">
+        <div class="container my-5">
             <h2 class="text-center mb-4">Add Email Routing Rule</h2>
             <form id="ruleForm" action="{{ url_for('add_rule') }}" method="POST" class="needs-validation" novalidate
 >
@@ -115,7 +141,7 @@
                 <div class="mb-3">
                     <label for="generated_email" class="form-label">Generated Text</label>
                     <input type="text" id="generated_email" name="generated_email"
-                        class="form-control bg-dark text-light" placeholder="random">
+                        class="form-control" placeholder="random">
                     <div class="invalid-feedback">
                         This field is required when 'Drop' is selected.
                     </div>
@@ -123,13 +149,13 @@
                 <div class="mb-3">
                     <div class="mb-3">
                         <label for="app_name" class="form-label">Service Name</label>
-                        <input type="text" id="app_name" name="app_name" class="form-control bg-dark text-light"
+                        <input type="text" id="app_name" name="app_name" class="form-control"
                             placeholder="Enter the service or app name">
                     </div>
                 </div>
                 <div class="mb-3">
                     <label for="destination_email" class="form-label">Destination Email</label>
-                    <select id="destination_email" name="destination_email" class="form-select bg-dark text-light"
+                    <select id="destination_email" name="destination_email" class="form-select"
                         required>
                         <option value="" disabled selected>Select an email</option>
                         {% for email in destination_emails %}
@@ -142,7 +168,7 @@
                 </div>
                 <div class="mb-3">
                     <label for="action_type" class="form-label">Action Type</label>
-                    <select id="action_type" name="action_type" class="form-select bg-dark text-light" required>
+                    <select id="action_type" name="action_type" class="form-select" required>
                         <option value="forward">Forward</option>
                         <option value="drop">Drop</option>
                     </select>
@@ -161,6 +187,7 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='alerts.js') }}"></script>
 </body>
 
 </html>
