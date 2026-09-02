@@ -708,3 +708,25 @@ body::after {
         animation: none;
     }
 }
+
+/* Safari cannot refract backdrop pixels; give its fallback stronger material depth. */
+:root[data-ui-style="extreme"] .lg-fallback {
+    background-image:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 28%, rgba(120, 85, 255, 0.1) 72%, rgba(255, 70, 190, 0.12));
+    border-color: rgba(255, 255, 255, 0.44) !important;
+    backdrop-filter: blur(20px) saturate(2.45) contrast(1.1) brightness(1.06) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(2.45) contrast(1.1) brightness(1.06) !important;
+    box-shadow:
+        0 20px 55px rgba(4, 8, 28, 0.34),
+        inset 1px 1px 1px rgba(255, 255, 255, 0.7),
+        inset -1px -1px 1px rgba(106, 61, 255, 0.28),
+        inset 0 -14px 30px rgba(255, 47, 183, 0.08) !important;
+}
+
+:root[data-ui-style="extreme"][data-bs-theme="light"] .lg-fallback {
+    background-image:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.38), transparent 30%, rgba(100, 78, 255, 0.09) 70%, rgba(255, 65, 178, 0.1));
+    border-color: rgba(255, 255, 255, 0.78) !important;
+    backdrop-filter: blur(18px) saturate(2.2) contrast(1.06) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(2.2) contrast(1.06) !important;
+}
