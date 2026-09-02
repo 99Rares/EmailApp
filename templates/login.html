@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en" data-bs-theme="dark" data-ui-style="liquid">
 
 <head>
     <meta charset="UTF-8">
@@ -20,6 +20,10 @@
 <body>
     <div class="container mt-5">
         <div class="d-flex justify-content-end gap-2 flex-wrap mb-3">
+            <button type="button" class="btn btn-outline-secondary style-toggle" aria-label="Switch to default appearance">
+                <i class="bi bi-droplet-fill" aria-hidden="true"></i>
+                <span class="style-label">Default style</span>
+            </button>
             <button type="button" class="btn btn-outline-secondary theme-toggle" aria-label="Switch to light mode">
                 <i class="bi bi-sun-fill" aria-hidden="true"></i>
                 <span class="theme-label">Light mode</span>
@@ -40,7 +44,7 @@
         </div>
         <div class="card mx-auto border-primary shadow-lg" style="max-width: 400px;">
             <div class="card-body">
-                <h3 class="card-title text-center">Login</h3>
+                <h3 class="card-title text-center mb-4"><i class="bi bi-envelope-at me-2" aria-hidden="true"></i>Email Routing</h3>
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                 {% for category, message in messages %}

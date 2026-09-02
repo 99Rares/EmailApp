@@ -347,3 +347,269 @@ tr.selected > * {
         width: 68px;
     }
 }
+
+/* Liquid glass interface */
+:root[data-bs-theme="dark"] {
+    --glass-bg: rgba(20, 27, 46, 0.58);
+    --glass-bg-strong: rgba(28, 37, 60, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.16);
+    --glass-highlight: rgba(255, 255, 255, 0.24);
+    --glass-shadow: rgba(0, 5, 25, 0.44);
+}
+
+:root[data-bs-theme="light"] {
+    --glass-bg: rgba(255, 255, 255, 0.54);
+    --glass-bg-strong: rgba(255, 255, 255, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.7);
+    --glass-highlight: rgba(255, 255, 255, 0.92);
+    --glass-shadow: rgba(39, 63, 99, 0.2);
+}
+
+body {
+    background-image:
+        radial-gradient(circle at 12% 8%, rgba(77, 166, 255, 0.38), transparent 32rem),
+        radial-gradient(circle at 88% 16%, rgba(173, 92, 255, 0.3), transparent 30rem),
+        radial-gradient(circle at 52% 92%, rgba(39, 216, 191, 0.22), transparent 34rem),
+        linear-gradient(145deg, #091525 0%, var(--app-bg) 48%, #15112a 100%);
+    background-attachment: fixed;
+    position: relative;
+}
+
+:root[data-bs-theme="light"] body {
+    background-image:
+        radial-gradient(circle at 12% 8%, rgba(62, 151, 255, 0.34), transparent 32rem),
+        radial-gradient(circle at 88% 16%, rgba(181, 104, 255, 0.28), transparent 30rem),
+        radial-gradient(circle at 52% 92%, rgba(46, 211, 183, 0.25), transparent 34rem),
+        linear-gradient(145deg, #dbeaff 0%, #f3f5ff 50%, #e8defc 100%);
+}
+
+body::before, body::after {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    width: 18rem;
+    height: 18rem;
+    border-radius: 50%;
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+body::before {
+    top: 12%;
+    left: -6rem;
+    background: linear-gradient(135deg, rgba(83, 190, 255, 0.55), rgba(100, 81, 255, 0.18));
+}
+
+body::after {
+    right: -7rem;
+    bottom: 8%;
+    background: linear-gradient(135deg, rgba(214, 100, 255, 0.42), rgba(255, 129, 176, 0.18));
+}
+
+.container {
+    background: linear-gradient(135deg, var(--glass-highlight), transparent 18%), var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 28px;
+    box-shadow: 0 24px 70px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+    padding: clamp(1rem, 3vw, 2rem);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+
+.container .container {
+    background: linear-gradient(135deg, var(--glass-highlight), transparent 24%), var(--glass-bg-strong);
+    border-radius: 22px;
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.16), inset 0 1px 0 var(--glass-highlight);
+}
+
+.page-header h1, .card-title { letter-spacing: -0.035em; }
+
+.btn {
+    border-radius: 13px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 5px 14px rgba(0, 0, 0, 0.1);
+    transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
+.btn-outline-secondary, .btn-outline-primary {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--glass-border);
+    color: var(--bs-body-color);
+    backdrop-filter: blur(12px);
+}
+
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.045);
+    --bs-table-hover-bg: rgba(83, 161, 255, 0.13);
+    margin-bottom: 0;
+}
+
+.table-responsive.card, .card {
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 20px;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.18), inset 0 1px 0 var(--glass-highlight) !important;
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+.table thead > tr > th {
+    background: rgba(64, 121, 210, 0.24);
+    border-color: var(--glass-border);
+    color: var(--bs-body-color);
+}
+
+.table > :not(caption) > * > * { border-color: rgba(255, 255, 255, 0.1); }
+
+.form-control, .form-select {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: var(--glass-border);
+    border-radius: 13px;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--glass-bg-strong);
+    border-color: rgba(91, 164, 255, 0.75);
+    box-shadow: 0 0 0 0.2rem rgba(72, 146, 255, 0.18), inset 0 1px 0 var(--glass-highlight);
+}
+
+.dropdown-menu, .alert {
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    box-shadow: 0 16px 36px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+    backdrop-filter: blur(22px) saturate(155%);
+    -webkit-backdrop-filter: blur(22px) saturate(155%);
+}
+
+.dropdown-item { border-radius: 9px; }
+
+.overlay {
+    background-color: rgba(8, 15, 29, 0.44);
+    backdrop-filter: blur(12px);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .container, .card, .dropdown-menu, .alert { background-color: var(--app-surface); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn { transition: none; }
+    .btn:hover { transform: none; }
+}
+
+/* Restore the original interface when the appearance toggle is set to default. */
+:root[data-ui-style="default"] body {
+    background-color: var(--app-bg);
+    background-image: none;
+}
+
+:root[data-ui-style="default"] body::before,
+:root[data-ui-style="default"] body::after {
+    display: none;
+}
+
+:root[data-ui-style="default"] .container {
+    background: var(--app-surface);
+    border: 0;
+    border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+    padding: 20px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+:root[data-ui-style="default"] .page-header h1,
+:root[data-ui-style="default"] .card-title {
+    letter-spacing: normal;
+}
+
+:root[data-ui-style="default"] .btn {
+    border-radius: var(--bs-border-radius);
+    box-shadow: none;
+    transition: color .15s ease-in-out, background-color .15s ease-in-out,
+        border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+:root[data-ui-style="default"] .btn:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+:root[data-ui-style="default"] .btn-outline-secondary,
+:root[data-ui-style="default"] .btn-outline-primary {
+    background: transparent;
+    backdrop-filter: none;
+}
+
+:root[data-ui-style="default"] .table {
+    --bs-table-bg: var(--bs-body-bg);
+    --bs-table-striped-bg: rgba(var(--bs-emphasis-color-rgb), 0.05);
+    --bs-table-hover-bg: rgba(var(--bs-emphasis-color-rgb), 0.075);
+}
+
+:root[data-ui-style="default"] .table-responsive.card,
+:root[data-ui-style="default"] .card {
+    background: var(--bs-body-bg);
+    border: var(--bs-border-width) solid var(--bs-border-color) !important;
+    border-radius: var(--bs-border-radius);
+    box-shadow: var(--bs-box-shadow-lg) !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+:root[data-ui-style="default"] .table thead > tr > th {
+    background: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+}
+
+:root[data-ui-style="default"] .table > :not(caption) > * > * {
+    border-color: var(--bs-border-color);
+}
+
+:root[data-ui-style="default"] .form-control,
+:root[data-ui-style="default"] .form-select {
+    background-color: var(--app-control);
+    border-color: var(--app-border);
+    border-radius: var(--bs-border-radius);
+}
+
+:root[data-ui-style="default"] .form-control:focus,
+:root[data-ui-style="default"] .form-select:focus {
+    background-color: var(--app-control);
+    border-color: #86b7fe;
+    box-shadow: 0 0 5px #007bff;
+}
+
+:root[data-ui-style="default"] .dropdown-menu,
+:root[data-ui-style="default"] .alert {
+    background: var(--bs-body-bg);
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+:root[data-ui-style="default"] .overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: none;
+}
+
+:root[data-ui-style="default"].christmas-theme body {
+    background-image:
+        radial-gradient(circle at 15% 10%, rgba(13, 110, 253, 0.16), transparent 30%),
+        radial-gradient(circle at 85% 5%, rgba(220, 53, 69, 0.12), transparent 28%);
+}
+
+:root[data-ui-style="default"].easter-theme body {
+    background-image:
+        radial-gradient(circle at 12% 8%, rgba(255, 183, 213, 0.22), transparent 28%),
+        radial-gradient(circle at 88% 12%, rgba(173, 232, 196, 0.2), transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(199, 184, 255, 0.16), transparent 35%);
+}
