@@ -350,8 +350,8 @@ tr.selected > * {
 
 /* Liquid glass interface */
 :root[data-bs-theme="dark"] {
-    --glass-bg: rgba(20, 27, 46, 0.58);
-    --glass-bg-strong: rgba(28, 37, 60, 0.72);
+    --glass-bg: rgba(20, 27, 46, 0.48);
+    --glass-bg-strong: rgba(28, 37, 60, 0.62);
     --glass-border: rgba(255, 255, 255, 0.16);
     --glass-highlight: rgba(255, 255, 255, 0.24);
     --glass-shadow: rgba(0, 5, 25, 0.44);
@@ -367,9 +367,11 @@ tr.selected > * {
 
 body {
     background-image:
-        radial-gradient(circle at 12% 8%, rgba(77, 166, 255, 0.38), transparent 32rem),
-        radial-gradient(circle at 88% 16%, rgba(173, 92, 255, 0.3), transparent 30rem),
-        radial-gradient(circle at 52% 92%, rgba(39, 216, 191, 0.22), transparent 34rem),
+        radial-gradient(circle at 12% 8%, rgba(77, 166, 255, 0.52), transparent 32rem),
+        radial-gradient(circle at 88% 16%, rgba(173, 92, 255, 0.44), transparent 30rem),
+        radial-gradient(ellipse at 50% 38%, rgba(71, 190, 255, 0.34), transparent 30rem),
+        radial-gradient(ellipse at 62% 62%, rgba(151, 92, 255, 0.28), transparent 34rem),
+        radial-gradient(circle at 52% 92%, rgba(39, 216, 191, 0.34), transparent 34rem),
         linear-gradient(145deg, #091525 0%, var(--app-bg) 48%, #15112a 100%);
     background-attachment: fixed;
     position: relative;
@@ -379,6 +381,8 @@ body {
     background-image:
         radial-gradient(circle at 12% 8%, rgba(62, 151, 255, 0.34), transparent 32rem),
         radial-gradient(circle at 88% 16%, rgba(181, 104, 255, 0.28), transparent 30rem),
+        radial-gradient(ellipse at 50% 38%, rgba(68, 177, 255, 0.3), transparent 30rem),
+        radial-gradient(ellipse at 62% 62%, rgba(167, 105, 255, 0.24), transparent 34rem),
         radial-gradient(circle at 52% 92%, rgba(46, 211, 183, 0.25), transparent 34rem),
         linear-gradient(145deg, #dbeaff 0%, #f3f5ff 50%, #e8defc 100%);
 }
@@ -390,7 +394,7 @@ body::before, body::after {
     width: 18rem;
     height: 18rem;
     border-radius: 50%;
-    opacity: 0.72;
+    opacity: 0.82;
     pointer-events: none;
 }
 
@@ -612,4 +616,95 @@ body::after {
         radial-gradient(circle at 12% 8%, rgba(255, 183, 213, 0.22), transparent 28%),
         radial-gradient(circle at 88% 12%, rgba(173, 232, 196, 0.2), transparent 30%),
         radial-gradient(circle at 50% 100%, rgba(199, 184, 255, 0.16), transparent 35%);
+}
+
+
+:root[data-ui-style="liquid"] .lg-fallback {
+    backdrop-filter: blur(18px) saturate(1.55);
+    -webkit-backdrop-filter: blur(18px) saturate(1.55);
+}
+
+/* Let the aurora remain visible through data-heavy glass surfaces. */
+:root[data-ui-style="liquid"][data-bs-theme="dark"] .table-responsive.card {
+    background: rgba(22, 31, 52, 0.5);
+}
+
+:root[data-ui-style="liquid"][data-bs-theme="light"] .table-responsive.card {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Intentionally excessive showcase mode. */
+:root[data-ui-style="extreme"] body {
+    background-image:
+        radial-gradient(circle at 8% 15%, rgba(0, 229, 255, 0.9), transparent 28rem),
+        radial-gradient(circle at 88% 12%, rgba(255, 40, 193, 0.88), transparent 30rem),
+        radial-gradient(circle at 48% 28%, rgba(119, 70, 255, 0.82), transparent 32rem),
+        radial-gradient(circle at 25% 72%, rgba(0, 255, 166, 0.72), transparent 32rem),
+        radial-gradient(circle at 76% 72%, rgba(255, 112, 32, 0.76), transparent 34rem),
+        radial-gradient(circle at 50% 105%, rgba(255, 216, 48, 0.68), transparent 30rem),
+        linear-gradient(130deg, #07152c, #270b45 44%, #061f31);
+    background-size: 120% 120%;
+    animation: gpu-aurora 9s ease-in-out infinite alternate;
+}
+
+:root[data-ui-style="extreme"] .container {
+    background: rgba(16, 24, 47, 0.3);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow:
+        0 30px 90px rgba(3, 4, 20, 0.55),
+        inset 0 1px 1px rgba(255, 255, 255, 0.62),
+        inset 0 -12px 28px rgba(116, 91, 255, 0.1);
+}
+
+:root[data-ui-style="extreme"][data-bs-theme="light"] .container {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+:root[data-ui-style="extreme"] .table-responsive.card,
+:root[data-ui-style="extreme"] .card {
+    background: rgba(18, 29, 56, 0.3);
+    border-color: rgba(255, 255, 255, 0.32) !important;
+}
+
+:root[data-ui-style="extreme"][data-bs-theme="light"] .table-responsive.card,
+:root[data-ui-style="extreme"][data-bs-theme="light"] .card {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+:root[data-ui-style="extreme"] .form-control,
+:root[data-ui-style="extreme"] .form-select {
+    background-color: rgba(255, 255, 255, 0.13);
+}
+
+:root[data-ui-style="extreme"] body::before {
+    background: linear-gradient(135deg, #00e5ff, #6851ff);
+    animation: gpu-orbit-left 7s ease-in-out infinite alternate;
+}
+
+:root[data-ui-style="extreme"] body::after {
+    background: linear-gradient(135deg, #ff36c8, #ff8a2b);
+    animation: gpu-orbit-right 8s ease-in-out infinite alternate;
+}
+
+@keyframes gpu-aurora {
+    from { background-position: 0% 0%; }
+    to { background-position: 80% 65%; }
+}
+
+@keyframes gpu-orbit-left {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(calc(100vw - 5rem), calc(80vh - 10rem), 0) scale(1.35) rotate(35deg); }
+}
+
+@keyframes gpu-orbit-right {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(calc(-100vw + 5rem), calc(-80vh + 10rem), 0) scale(1.4) rotate(-40deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root[data-ui-style="extreme"] body,
+    :root[data-ui-style="extreme"] body::before,
+    :root[data-ui-style="extreme"] body::after {
+        animation: none;
+    }
 }

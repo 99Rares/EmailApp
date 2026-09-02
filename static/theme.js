@@ -1,6 +1,11 @@
 (function () {
   const themeStorageKey = "emailapp-theme";
   const styleStorageKey = "emailapp-ui-style";
+  const styleDetails = {
+    liquid: { label: "Standard glass", icon: "bi bi-droplet-fill" },
+    extreme: { label: "GPU hurt", icon: "bi bi-radioactive" },
+    default: { label: "Default style", icon: "bi bi-square" },
+  };
   let theme = "dark";
   let uiStyle = "liquid";
 
@@ -10,7 +15,7 @@
     if (savedTheme === "light" || savedTheme === "dark") {
       theme = savedTheme;
     }
-    if (savedStyle === "liquid" || savedStyle === "default") {
+    if (Object.prototype.hasOwnProperty.call(styleDetails, savedStyle)) {
       uiStyle = savedStyle;
     }
   } catch (error) {
@@ -22,7 +27,8 @@
 
   function updateControls() {
     const isDark = document.documentElement.getAttribute("data-bs-theme") === "dark";
-    const isLiquid = document.documentElement.getAttribute("data-ui-style") === "liquid";
+    const currentStyle = document.documentElement.getAttribute("data-ui-style");
+    const details = styleDetails[currentStyle] || styleDetails.liquid;
 
     document.querySelectorAll(".theme-toggle").forEach((button) => {
       button.setAttribute("aria-label", `Switch to ${isDark ? "light" : "dark"} mode`);
@@ -30,11 +36,15 @@
       button.querySelector("i").className = isDark ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
     });
 
-    document.querySelectorAll(".style-toggle").forEach((button) => {
-      button.setAttribute("aria-label", `Switch to ${isLiquid ? "default" : "liquid glass"} appearance`);
-      button.querySelector(".style-label").textContent = isLiquid ? "Default style" : "Liquid glass";
-      button.querySelector("i").className = isLiquid ? "bi bi-square" : "bi bi-droplet-fill";
-      button.setAttribute("aria-pressed", String(isLiquid));
+    document.querySelectorAll(".appearance-toggle").forEach((button) => {
+      button.setAttribute("aria-label", `Appearance: ${details.label}`);
+      button.querySelector(".style-label").textContent = details.label;
+      button.querySelector("i").className = details.icon;
+    });
+
+    document.querySelectorAll("[data-ui-style-option]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.uiStyleOption === currentStyle);
+      button.setAttribute("aria-current", button.dataset.uiStyleOption === currentStyle ? "true" : "false");
     });
   }
 
@@ -55,10 +65,9 @@
       });
     });
 
-    document.querySelectorAll(".style-toggle").forEach((button) => {
+    document.querySelectorAll("[data-ui-style-option]").forEach((button) => {
       button.addEventListener("click", () => {
-        const currentStyle = document.documentElement.getAttribute("data-ui-style");
-        const nextStyle = currentStyle === "liquid" ? "default" : "liquid";
+        const nextStyle = button.dataset.uiStyleOption;
         document.documentElement.setAttribute("data-ui-style", nextStyle);
         try {
           localStorage.setItem(styleStorageKey, nextStyle);
